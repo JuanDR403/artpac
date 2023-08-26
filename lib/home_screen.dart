@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:artpac/comment.dart';
-import 'package:artpac/database.dart';
+import 'package:artpac/database.dart' as database;
 import 'package:artpac/login_screen.dart';
 import 'package:artpac/post_screen.dart';
 import 'package:flutter/material.dart';
@@ -16,21 +16,19 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  String _currentUser =
-      ''; // Variable para almacenar el nombre de usuario actual
-  List<Post> posts = []; // Lista de publicaciones
+  String _currentUser = '';
+  List<database.Post> posts = [];
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
-    _loadPosts(); // Cargar las publicaciones al iniciar la pantalla
+    _loadPosts();
   }
 
   Future<void> _loadCurrentUser() async {
-    final db = await DatabaseProvider.instance.database;
-    final result = await db.query('users',
-        limit: 1); // Suponiendo un solo usuario autenticado
+    final db = await database.DatabaseProvider.instance.database;
+    final result = await db.query('users', limit: 1);
 
     if (result.isNotEmpty) {
       setState(() {
@@ -41,12 +39,12 @@ class _UserPageState extends State<UserPage> {
   }
 
   Future<void> _loadPosts() async {
-    final db = await DatabaseProvider.instance.database;
+    final db = await database.DatabaseProvider.instance.database;
     final List<Map<String, dynamic>> maps = await db.query('posts');
 
     setState(() {
       posts = List.generate(maps.length, (index) {
-        return Post(
+        return database.Post(
           username: maps[index]['userName'] as String,
           description: maps[index]['description'] as String,
           imagePath: maps[index]['imageUrl'] as String,
@@ -56,17 +54,16 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _logout() {
-    // Aquí puedes implementar la lógica para cerrar la sesión
-    // Esto podría involucrar eliminar la información del usuario actual de las variables y redirigir a la pantalla de inicio de sesión
+    // Implementa la lógica para cerrar la sesión si es necesario
   }
 
-  void _likePost(Post post) {
+  void _likePost(database.Post post) {
     setState(() {
       post.likes++;
     });
   }
 
-  void _addComment(Post post) async {
+  void _addComment(database.Post post) async {
     final content = await showDialog(
       context: context,
       builder: (context) {
@@ -98,8 +95,7 @@ class _UserPageState extends State<UserPage> {
         content: content,
       );
 
-      // Insertar el comentario en la base de datos
-      await DatabaseProvider.instance.insertComment(newComment);
+      await database.DatabaseProvider.instance.insertComment(newComment);
 
       setState(() {
         post.comments.add(newComment);
@@ -113,8 +109,7 @@ class _UserPageState extends State<UserPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('Tu Aplicación'),
-          automaticallyImplyLeading:
-              false, // Eliminar la flecha de volver atrás
+          automaticallyImplyLeading: false,
         ),
         body: Center(
           child: Column(
@@ -137,15 +132,14 @@ class _UserPageState extends State<UserPage> {
                 ),
                 child: Text('Postear Imagen'),
               ),
-              SizedBox(height: 20), // Espacio entre los botones
+              SizedBox(height: 20),
               Expanded(
                 child: ListView.builder(
                   itemCount: posts.length,
                   itemBuilder: (context, index) {
                     final post = posts[index];
                     return Container(
-                      margin: EdgeInsets.symmetric(
-                          vertical: 8), // Agrega un margen vertical
+                      margin: EdgeInsets.symmetric(vertical: 8),
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey),
@@ -160,14 +154,13 @@ class _UserPageState extends State<UserPage> {
                           Text('Likes: ${post.likes}'),
                           ElevatedButton(
                             onPressed: () {
-                              _likePost(post); // Llama a la función _likePost
+                              _likePost(post);
                             },
                             child: Text('Dar Like'),
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              _addComment(
-                                  post); // Llama a la función _addComment
+                              _addComment(post);
                             },
                             child: Text('Agregar Comentario'),
                           ),
@@ -190,10 +183,9 @@ class _UserPageState extends State<UserPage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          LoginPage(), // Redirigir a la pantalla de inicio de sesión
+                      builder: (context) => LoginPage(),
                     ),
-                    (route) => false, // Remover todas las rutas anteriores
+                    (route) => false,
                   );
                 },
                 child: Text('Cerrar Sesión'),
