@@ -3,13 +3,15 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class Post {
+  final int id; // Agregar esta línea para la propiedad 'id'
   final String username;
   final String description;
   final String imagePath;
-  int likes; // Agrega este atributo
-  List<Comment> comments; // Agrega este atributo
+  int likes;
+  List<Comment> comments;
 
   Post({
+    required this.id, // Agregar esta línea para la propiedad 'id'
     required this.username,
     required this.description,
     required this.imagePath,

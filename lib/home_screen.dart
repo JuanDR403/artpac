@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:artpac/comment.dart';
 import 'package:artpac/database.dart' as database;
 import 'package:artpac/login_screen.dart';
@@ -18,6 +17,7 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   String _currentUser = '';
   List<database.Post> posts = [];
+  Set<int> likedPostIds = Set();
 
   @override
   void initState() {
@@ -45,6 +45,7 @@ class _UserPageState extends State<UserPage> {
     setState(() {
       posts = List.generate(maps.length, (index) {
         return database.Post(
+          id: maps[index]['id'] as int,
           username: maps[index]['userName'] as String,
           description: maps[index]['description'] as String,
           imagePath: maps[index]['imageUrl'] as String,
@@ -57,9 +58,15 @@ class _UserPageState extends State<UserPage> {
     // Implementa la lógica para cerrar la sesión si es necesario
   }
 
-  void _likePost(database.Post post) {
+  void _toggleLike(database.Post post) {
     setState(() {
-      post.likes++;
+      if (likedPostIds.contains(post.id)) {
+        post.likes--;
+        likedPostIds.remove(post.id);
+      } else {
+        post.likes++;
+        likedPostIds.add(post.id);
+      }
     });
   }
 
@@ -95,12 +102,22 @@ class _UserPageState extends State<UserPage> {
         content: content,
       );
 
+      // Insertar el comentario en la base de datos
       await database.DatabaseProvider.instance.insertComment(newComment);
 
       setState(() {
         post.comments.add(newComment);
       });
     }
+  }
+
+  void _viewComments(database.Post post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommentScreen(comments: post.comments),
+      ),
+    );
   }
 
   @override
@@ -138,6 +155,8 @@ class _UserPageState extends State<UserPage> {
                   itemCount: posts.length,
                   itemBuilder: (context, index) {
                     final post = posts[index];
+                    final hasLiked = likedPostIds.contains(post.id);
+
                     return Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
                       padding: EdgeInsets.all(16),
@@ -154,15 +173,21 @@ class _UserPageState extends State<UserPage> {
                           Text('Likes: ${post.likes}'),
                           ElevatedButton(
                             onPressed: () {
-                              _likePost(post);
+                              _toggleLike(post);
                             },
-                            child: Text('Dar Like'),
+                            child: Text(hasLiked ? 'Quitar Like' : 'Dar Like'),
                           ),
                           ElevatedButton(
                             onPressed: () {
                               _addComment(post);
                             },
                             child: Text('Agregar Comentario'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              _viewComments(post);
+                            },
+                            child: Text('Ver Comentarios'),
                           ),
                           Column(
                             children: post.comments.map((comment) {
@@ -193,6 +218,31 @@ class _UserPageState extends State<UserPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class CommentScreen extends StatelessWidget {
+  final List<Comment> comments;
+
+  CommentScreen({required this.comments});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Comentarios'),
+      ),
+      body: ListView.builder(
+        itemCount: comments.length,
+        itemBuilder: (context, index) {
+          final comment = comments[index];
+          return ListTile(
+            title: Text(comment.username),
+            subtitle: Text(comment.content),
+          );
+        },
       ),
     );
   }
